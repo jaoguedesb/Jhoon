@@ -1,6 +1,6 @@
 # Jhoon
 
-Jhoon é um jogo em primeira pessoa feito em Python com Pygame, inspirado em clássicos como Wolfenstein 3D e DOOM. O projeto utiliza raycasting para simular um ambiente 3D, com combate, inimigos, itens coletáveis, armas especiais e uma batalha contra chefe final.
+Jhoon é um jogo em primeira pessoa feito em Python com Pygame, inspirado em clássicos como DOOM. O projeto utiliza raycasting para simular um ambiente 3D, com combate, inimigos, itens coletáveis, armas especiais e uma batalha contra chefe final.
 
 ## Visão Geral
 
