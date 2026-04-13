@@ -211,12 +211,14 @@ class SequenceAnimatedPickupSprite(SpriteObject):
 
 
 class InteractableSprite(SpriteObject):
-    def __init__(self, game, path, pos, on_interact=None, scale=0.45, shift=0.1, interact_distance=1.5):
+    def __init__(self, game, path, pos, on_interact=None, scale=0.45, shift=0.1, interact_distance=1.5,
+                 used_image_path=None):
         # Sprite que pode ser usado/interagido pelo jogador quando estiver proximo.
         super().__init__(game, path, pos, scale, shift)
         self.on_interact = on_interact
         self.interact_distance = interact_distance
         self.used = False
+        self.used_image_path = used_image_path
 
     def can_interact(self):
         # Retorna True se o objeto ainda nao foi usado e esta perto do jogador.
@@ -227,11 +229,15 @@ class InteractableSprite(SpriteObject):
         if not self.can_interact():
             return False
         self.used = True
+        if self.used_image_path:
+            self.image = pg.image.load(resource_path(*self.used_image_path.split('/'))).convert_alpha()
+            self.IMAGE_WIDTH = self.image.get_width()
+            self.IMAGE_HALF_WIDTH = self.image.get_width() // 2
+            self.IMAGE_RATIO = self.IMAGE_WIDTH / self.image.get_height()
         if self.on_interact:
             self.on_interact()
         return True
 
     def update(self):
         # Desenha o objeto somente enquanto ele ainda estiver disponivel.
-        if not self.used:
-            self.get_sprite()
+        self.get_sprite()

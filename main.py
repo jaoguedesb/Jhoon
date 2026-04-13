@@ -1,7 +1,7 @@
 import pygame as pg
 import sys
 from settings import *
-from map import *
+from mapas import Map
 from player import *
 from raycasting import *
 from object_renderer import *

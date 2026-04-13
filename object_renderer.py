@@ -278,5 +278,8 @@ class ObjectRenderer:
             2: self.get_texture(resource_path('resources', 'textures', '2.png')),
             3: self.get_texture(resource_path('resources', 'textures', '3.png')),
             4: self.get_texture(resource_path('resources', 'textures', '4.png')),
-            5: self.get_texture(resource_path('resources', 'textures', '5.png')),
+            6: self.get_texture(resource_path('resources', 'textures', 'door', 'porta.png')),
+            7: self.get_texture(resource_path('resources', 'textures', 'door', 'madeira.png')),
+            8: self.get_texture(resource_path('resources', 'textures', 'door', 'Alavanca-fechada.png')),
+            9: self.get_texture(resource_path('resources', 'textures', 'door', 'Alavanca-aberta.png')),
         }

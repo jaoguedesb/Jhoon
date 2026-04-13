@@ -53,11 +53,24 @@ class PathFinding:
 
     def get_next_nodes(self, x, y):
         # Retorna os vizinhos livres ao redor de uma celula.
-        return [(x + dx, y + dy) for dx, dy in self.ways if (x + dx, y + dy) not in self.game.map.world_map]
+        return [
+            (x + dx, y + dy)
+            for dx, dy in self.ways
+            if 0 <= x + dx < self.game.map.cols
+            and 0 <= y + dy < self.game.map.rows
+            and not self.game.map.is_blocking(x + dx, y + dy)
+        ]
 
     def get_graph(self):
         # Percorre o mapa e cria o grafo apenas para os tiles vazios.
-        for y, row in enumerate(self.map):
-            for x, col in enumerate(row):
-                if not col:
+        self.graph = {}
+        for y in range(self.game.map.rows):
+            for x in range(self.game.map.cols):
+                if not self.game.map.is_blocking(x, y):
                     self.graph[(x, y)] = self.graph.get((x, y), []) + self.get_next_nodes(x, y)
+
+    def rebuild(self):
+        # Reconstroi o grafo quando o layout dinamico do mapa muda, como ao abrir portas.
+        self.map = self.game.map.mini_map
+        self.get_path.cache_clear()
+        self.get_graph()

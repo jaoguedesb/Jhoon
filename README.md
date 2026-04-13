@@ -44,7 +44,10 @@ O jogo usa uma estrutura de mapa 2D com projeção em pseudo-3D por meio de rayc
 - [`player.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/player.py): movimentação, tiro, vida e controle do jogador
 - [`weapon.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/weapon.py): estados das armas, animações, recoil e habilidades especiais
 - [`raycasting.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/raycasting.py): lógica de projeção das paredes e renderização pseudo-3D
-- [`map.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/map.py): definição do mapa e colisões
+- `mapas/map.py`: carregamento do mapa ativo e colisões
+- `mapas/map_01_llm.py`: primeiro mapa experimental gerado com apoio de LLM
+- `mapas/map_02_classic.py`: mapa clássico original do projeto
+- `mapas/map_03_arena.py`: variação inicial focada em arenas
 - [`sprite_object.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/sprite_object.py): sprites base, sprites animados, pickups e interações
 - [`npc.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/npc.py): inteligência dos inimigos, movimentação, ataques e comportamento do chefe
 - [`object_handler.py`](/abs/path/c:/Users/jubit/OneDrive/Desktop/Jhoon/object_handler.py): criação e atualização de entidades, progressão e condição de vitória
@@ -64,6 +67,8 @@ Atualmente, o projeto lista:
 ```txt
 pygame
 ```
+
+O mapa ativo pode ser trocado em `settings.py` pela constante `ACTIVE_MAP`.
 
 ## Instalação
 

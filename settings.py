@@ -11,6 +11,10 @@ HALF_HEIGHT = HEIGHT // 2
 # FPS = 0 deixa o jogo rodar sem limite fixo imposto pelo clock.
 FPS = 0
 
+# Mapa ativo carregado pela pasta mapas/.
+# Opcoes iniciais: map_01_llm, map_02_classic, map_03_arena
+ACTIVE_MAP = 'map_01_llm'
+
 # Configuracoes iniciais do jogador.
 PLAYER_POS = 1.5, 5  # mini_map
 PLAYER_ANGLE = 0

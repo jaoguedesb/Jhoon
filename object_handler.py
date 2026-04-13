@@ -1,3 +1,4 @@
+import pygame as pg
 from sprite_object import *
 from npc import *
 from random import choices, randrange
@@ -21,7 +22,10 @@ class ObjectHandler:
         self.final_boss_spawned = False
         self.horde_cleared = False
         self.minigun_pickup = None
+        self.interactable_list = []
         self.interaction_message = ''
+        self.status_message = ''
+        self.status_message_until = 0
 
         # Define quantidade e distribuicao inicial de inimigos comuns.
         self.enemies = 20
@@ -32,19 +36,8 @@ class ObjectHandler:
         self.spawn_npc()
 
         # Adiciona sprites decorativos e luzes do cenario.
-        add_sprite(SpriteObject(game))
-        add_sprite(SpriteObject(game, pos=(1.5, 1.5)))
-        add_sprite(SpriteObject(game, pos=(1.5, 7.5)))
-        add_sprite(SpriteObject(game, pos=(5.5, 3.25)))
-        add_sprite(SpriteObject(game, pos=(5.5, 4.75)))
-        add_sprite(SpriteObject(game, pos=(7.5, 2.5)))
-        add_sprite(SpriteObject(game, pos=(7.5, 5.5)))
-        add_sprite(SpriteObject(game, pos=(14.5, 1.5)))
-        add_sprite(SpriteObject(game, pos=(14.5, 4.5)))
-        add_sprite(SpriteObject(game, pos=(14.5, 24.5)))
-        add_sprite(SpriteObject(game, pos=(14.5, 30.5)))
-        add_sprite(SpriteObject(game, pos=(1.5, 30.5)))
-        add_sprite(SpriteObject(game, pos=(1.5, 24.5)))
+        for sprite_pos in self.get_static_sprite_positions():
+            add_sprite(SpriteObject(game, pos=sprite_pos))
         add_sprite(PickupSprite(
             game,
             path='resources/hub/cat.png',
@@ -56,6 +49,44 @@ class ObjectHandler:
         ))
         # Espalha pickups do bonus especial pelo mapa.
         self.spawn_racao()
+
+    def unlock_door(self, door_id):
+        # Aciona a porta associada ao botao usado pelo jogador.
+        if self.game.map.open_door(door_id):
+            for switch_data in self.game.map.get_switches():
+                if switch_data['id'] == door_id:
+                    self.show_status_message(switch_data['open_message'])
+                    break
+
+    def show_status_message(self, message, duration=1800):
+        # Exibe uma mensagem curta de feedback na interface.
+        self.status_message = message
+        self.status_message_until = pg.time.get_ticks() + duration
+
+    def get_static_sprite_positions(self):
+        # Mantem o primeiro mapa mais legivel, com objetos encostados nas paredes das salas.
+        if self.game.map.map_id == 'map_01_llm':
+            return [
+                (1.5, 2.5), (14.5, 2.5), (1.5, 12.5), (14.5, 12.5),
+                (1.5, 18.5), (14.5, 18.5), (1.5, 28.5), (14.5, 28.5),
+                (1.5, 34.5), (14.5, 34.5), (1.5, 44.5), (14.5, 44.5),
+                (1.5, 50.5), (14.5, 50.5), (1.5, 60.5), (14.5, 60.5),
+            ]
+        return [
+            (10.5, 3.5),
+            (1.5, 1.5),
+            (1.5, 7.5),
+            (5.5, 3.25),
+            (5.5, 4.75),
+            (7.5, 2.5),
+            (7.5, 5.5),
+            (14.5, 1.5),
+            (14.5, 4.5),
+            (14.5, 24.5),
+            (14.5, 30.5),
+            (1.5, 30.5),
+            (1.5, 24.5),
+        ]
 
     def spawn_npc(self):
         # Gera a horda inicial de inimigos em posicoes livres do mapa.
@@ -155,8 +186,11 @@ class ObjectHandler:
             self.spawn_final_boss()
 
     def try_interact(self):
-        # Espaco reservado para futuras interacoes do jogador com objetos do mapa.
-        return
+        # Ativa a alavanca de parede mais proxima do jogador, se houver.
+        nearest_switch = self.get_nearest_switch()
+        if not nearest_switch:
+            return
+        self.unlock_door(nearest_switch['id'])
 
     def check_win(self):
         # Verifica se todos os inimigos comuns foram derrotados para liberar a proxima etapa.
@@ -199,14 +233,47 @@ class ObjectHandler:
                 self.game.sound.play_boost_theme()
             else:
                 self.game.sound.play_main_theme()
-        # Exibe mensagem de interacao quando a minigun esta disponivel.
-        if self.minigun_pickup:
-            self.interaction_message = 'Pegue a minigun'
-        else:
-            self.interaction_message = ''
+        self.update_interaction_message()
         # Limpa marcadores de dano pendente e verifica condicao de vitoria.
         self.game.weapon.clear_pending_damage()
         self.check_win()
+
+    def update_interaction_message(self):
+        # Prioriza feedback temporario, depois botoes de porta e por fim pickups importantes.
+        time_now = pg.time.get_ticks()
+        if self.status_message and time_now < self.status_message_until:
+            self.interaction_message = self.status_message
+            return
+        if self.status_message and time_now >= self.status_message_until:
+            self.status_message = ''
+
+        nearest_switch = self.get_nearest_switch()
+        if nearest_switch:
+            self.interaction_message = nearest_switch['button_prompt']
+            return
+
+        if self.minigun_pickup:
+            self.interaction_message = 'Pegue a minigun'
+            return
+
+        self.interaction_message = ''
+
+    def get_nearest_switch(self):
+        # Retorna a alavanca de parede mais proxima que ainda nao foi usada.
+        player_x, player_y = self.game.player.pos
+        available = []
+        for switch_data in self.game.map.get_switches():
+            if switch_data.get('is_open'):
+                continue
+            tile_x, tile_y = switch_data.get('selected_button_tile', (-99, -99))
+            center_x, center_y = tile_x + 0.5, tile_y + 0.5
+            distance = math.hypot(center_x - player_x, center_y - player_y)
+            if distance <= 2.2:
+                available.append((distance, switch_data))
+        if not available:
+            return None
+        available.sort(key=lambda item: item[0])
+        return available[0][1]
 
     def add_npc(self, npc):
         # Adiciona um novo NPC ao gerenciador.
