@@ -331,6 +331,15 @@ class FinalBossNPC(NPC):
         self.phase_two_reflection_offset = (3.6, 0.0)
         self.last_real_attack_time = -1
 
+    def set_phase_two_sprites(self):
+        # Troca os sprites do boss para a aparencia exclusiva da fase 2.
+        self.idle_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_final/boss-2fase.png')])
+        self.walk_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_final/boss-andando-2fase.png')])
+        self.attack_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_final/boss-atacando-2fase.png')])
+        self.pain_images = deque(self.idle_images)
+        self.images = deque(self.idle_images)
+        self.image = self.idle_images[0]
+
     def can_spawn_boss_projectile(self, damage):
         # Limita quantos projeteis do boss podem existir ao mesmo tempo para evitar excesso.
         active_projectiles = [
@@ -359,6 +368,7 @@ class FinalBossNPC(NPC):
         self.phase_two_triggered = True
         self.speed = self.phase_two_speed
         self.projectile_speed = self.phase_two_projectile_speed
+        self.set_phase_two_sprites()
         self.spawn_phase_two_reflection()
 
     def movement(self):
