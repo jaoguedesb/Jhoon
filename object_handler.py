@@ -9,10 +9,7 @@ NPC_CLASSES_BY_NAME = {
     'EsqueletoNPC': EsqueletoNPC,
     'AraraNPC': AraraNPC,
     'FinalBossNPC': FinalBossNPC,
-<<<<<<< HEAD
-=======
     'SecretBossNPC': SecretBossNPC,
->>>>>>> 51e6147 (Initial project import and gameplay updates)
 }
 
 MAP_01_ROOM_NPC_LAYOUT = [
@@ -236,8 +233,6 @@ class ObjectHandler:
         self.game.sound.play_boss_theme()
         self.game.object_renderer.set_default_sky()
 
-<<<<<<< HEAD
-=======
     def spawn_secret_boss(self, amount=10):
         # Cria varios bosses secretos espalhados em tiles livres quando o comando do terminal for usado.
         occupied_tiles = {(int(sprite.x), int(sprite.y)) for sprite in self.sprite_list}
@@ -276,8 +271,6 @@ class ObjectHandler:
                 return x, y
 
         return self.get_random_free_tile(blocked_tiles)
-
->>>>>>> 51e6147 (Initial project import and gameplay updates)
     def spawn_minigun_pickup(self, pos=None):
         # Cria o pickup da minigun perto do jogador depois que a horda e derrotada.
         x, y = pos if pos else self.get_tile_in_front_of_player()

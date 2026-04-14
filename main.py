@@ -176,7 +176,7 @@ class Game:
 
         map_state = save_data.get('map', {})
         self.new_game(map_id=map_state.get('map_id'), show_intro_message=False)
-        self.dev_mode = save_data.get('dev_mode', True)
+        self.dev_mode = save_data.get('dev_mode', False)
         self.map.apply_saved_state(map_state)
         self.player.apply_saved_state(save_data.get('player', {}))
         self.weapon.apply_saved_state(save_data.get('weapon', {}))
