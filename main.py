@@ -31,14 +31,11 @@ class Game:
         self.top_message_duration = 0
         # Define se o modo desenvolvedor esta ativo.
         self.dev_mode = False
-<<<<<<< HEAD
-=======
         # Estado do terminal interno aberto pelo Enter.
         self.console_active = False
         self.console_input = ''
         self.console_message = ''
         self.console_message_until = 0
->>>>>>> 51e6147 (Initial project import and gameplay updates)
         # global_trigger e um pulso periodico usado por animacoes e eventos temporizados.
         self.global_trigger = False
         self.global_event = pg.USEREVENT + 0
@@ -87,8 +84,6 @@ class Game:
         # Abre o menu de pausa durante a partida.
         self.menu.run_pause_menu()
 
-<<<<<<< HEAD
-=======
     def toggle_console(self):
         # Alterna a visibilidade do terminal interno e limpa a linha atual ao fechar.
         self.console_active = not self.console_active
@@ -145,8 +140,6 @@ class Game:
 
         if event.unicode and event.unicode.isprintable():
             self.console_input += event.unicode
-
->>>>>>> 51e6147 (Initial project import and gameplay updates)
     def has_save_game(self):
         # Informa ao menu inicial se existe um save pronto para carregar.
         return self.save_system.has_save()
@@ -216,15 +209,12 @@ class Game:
 
     def update(self):
         # Atualiza a logica principal do jogo a cada frame.
-<<<<<<< HEAD
-=======
         if self.console_active:
             # Congela a simulacao enquanto o jogador digita no terminal.
             pg.display.flip()
             self.delta_time = self.clock.tick(FPS)
             pg.display.set_caption(f'{self.clock.get_fps() :.1f}')
             return
->>>>>>> 51e6147 (Initial project import and gameplay updates)
         self.player.update()
         self.raycasting.update()
         self.object_handler.update()
@@ -252,8 +242,6 @@ class Game:
                 # Fecha o jogo ao clicar no X da janela.
                 pg.quit()
                 sys.exit()
-<<<<<<< HEAD
-=======
             elif self.console_active:
                 self.handle_console_event(event)
                 continue
@@ -261,7 +249,6 @@ class Game:
                 # ENTER abre o terminal interno.
                 self.toggle_console()
                 continue
->>>>>>> 51e6147 (Initial project import and gameplay updates)
             elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 # ESC abre o menu de pausa durante a partida.
                 self.open_dev_menu()

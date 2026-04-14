@@ -1,5 +1,8 @@
 import sys
 import math
+import os
+import importlib
+import random
 import pygame as pg
 import cv2
 
@@ -39,6 +42,7 @@ class Menu:
                     pg.image.load(resource_path('resources', 'hub', 'new-game.png')).convert_alpha()
                 ),
                 'center': self.selection_button_centers['new_game'],
+                'home_center': self.selection_button_centers['new_game'],
             },
             {
                 'id': 'load_game',
@@ -46,6 +50,7 @@ class Menu:
                     pg.image.load(resource_path('resources', 'hub', 'load-game.png')).convert_alpha()
                 ),
                 'center': self.selection_button_centers['load_game'],
+                'home_center': self.selection_button_centers['load_game'],
             },
             {
                 'id': 'quit',
@@ -53,11 +58,24 @@ class Menu:
                     pg.image.load(resource_path('resources', 'hub', 'Quit.png')).convert_alpha()
                 ),
                 'center': self.selection_button_centers['quit'],
+                'home_center': self.selection_button_centers['quit'],
             },
         ]
         # Define caminhos dos arquivos de audio e video usados na introducao.
         self.sound_path = resource_path('resources', 'menu', 'sound_menu.mp3')
-        self.intro_video_path = resource_path('resources', 'sound', 'inicio.mp4')
+        self.intro_video_path = resource_path('resources', 'sound', 'Video Project 7.mp4')
+        self.menu_theme_path = resource_path('resources', 'sound', 'menu.mp3')
+        self.pydew_main_path = resource_path('pydew-valley-main', 'code', 'main.py')
+        self.pydew_root_path = resource_path('pydew-valley-main')
+        self.pydew_code_path = resource_path('pydew-valley-main', 'code')
+        self.jhoon_theme_path = resource_path('resources', 'sound', 'theme.mp3')
+        self.boss_sprite_path = resource_path('resources', 'sprites', 'npc', 'boss_final', 'boss.png')
+        self.keep_transition_music = False
+        self.opening_sequence_done = False
+        self.boss_transition_sprite = None
+        if os.path.exists(self.boss_sprite_path):
+            self.boss_transition_sprite = pg.image.load(self.boss_sprite_path).convert_alpha()
+        self.transition_rain_drops = []
         # Inicializa as fontes usadas nas telas do menu.
         self.story_title_font = pg.font.SysFont('georgia', 42, bold=True)
         self.story_font = pg.font.SysFont('georgia', 28)
@@ -141,6 +159,7 @@ class Menu:
         # Desenha a segunda tela de menu com as opcoes principais.
         self.screen.blit(self.selection_background, (0, 0))
         mouse_pos = pg.mouse.get_pos()
+        self.update_selection_menu_buttons(mouse_pos)
 
         for button in self.selection_buttons:
             hovered = pg.Rect(button['center'][0] - 1, button['center'][1] - 1, 2, 2).collidepoint(mouse_pos)
@@ -157,6 +176,41 @@ class Menu:
 
         pg.display.flip()
 
+    def move_quit_button(self, button, mouse_pos):
+        # Faz o botao de quit fugir do cursor e voltar devagar quando o mouse se afasta.
+        current_x, current_y = button['center']
+        home_x, home_y = button['home_center']
+        dx = current_x - mouse_pos[0]
+        dy = current_y - mouse_pos[1]
+        distance = math.hypot(dx, dy)
+        threat_radius = 240
+
+        if distance < threat_radius:
+            if distance < 1:
+                dx, dy = random.uniform(-1, 1), random.uniform(-1, 1)
+                distance = max(1.0, math.hypot(dx, dy))
+            escape_step = 28
+            current_x += (dx / distance) * escape_step
+            current_y += (dy / distance) * escape_step
+        else:
+            current_x += (home_x - current_x) * 0.08
+            current_y += (home_y - current_y) * 0.08
+
+        margin_x = 220
+        min_y = HEIGHT // 2 + 150
+        max_y = HEIGHT - 80
+        current_x = max(margin_x, min(WIDTH - margin_x, current_x))
+        current_y = max(min_y, min(max_y, current_y))
+        button['center'] = (current_x, current_y)
+
+    def update_selection_menu_buttons(self, mouse_pos):
+        # Atualiza a posicao do botao de quit para a brincadeira de fuga.
+        for button in self.selection_buttons:
+            if button['id'] == 'quit':
+                self.move_quit_button(button, mouse_pos)
+            else:
+                button['center'] = button['home_center']
+
     def run_selection_menu(self):
         # Loop do menu de escolhas entre a tela inicial e o inicio da partida.
         while True:
@@ -166,22 +220,28 @@ class Menu:
                     for button in self.selection_buttons:
                         if button.get('rect') and button['rect'].collidepoint(event.pos):
                             if button['id'] == 'new_game':
+                                self.keep_transition_music = False
                                 return 'new_game'
                             if button['id'] == 'load_game':
                                 if self.game.has_save_game():
+                                    self.keep_transition_music = False
                                     return 'load_game'
                                 self.selection_feedback = 'Nenhum save encontrado'
                                 self.selection_feedback_until = pg.time.get_ticks() + 1600
                             if button['id'] == 'quit':
-                                pg.quit()
-                                sys.exit()
+                                self.move_quit_button(button, pg.mouse.get_pos())
+                                self.selection_feedback = 'Nao da pra clicar em Quit'
+                                self.selection_feedback_until = pg.time.get_ticks() + 900
 
             self.draw_selection_menu()
             self.clock.tick(60)
 
     def start_game(self):
         # Encerra a musica do menu e prepara o jogo para capturar mouse e teclado.
-        pg.mixer.music.stop()
+        self.game.transition_music_active = self.keep_transition_music
+        if not self.keep_transition_music:
+            pg.mixer.music.stop()
+        self.keep_transition_music = False
         pg.mouse.set_visible(False)
         pg.event.set_grab(True)
 
@@ -193,6 +253,12 @@ class Menu:
         if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
             pg.quit()
             sys.exit()
+
+    def play_menu_theme(self):
+        # Toca a trilha do menu usada depois da abertura no Pydew.
+        pg.mixer.music.load(self.menu_theme_path)
+        pg.mixer.music.set_volume(0.4)
+        pg.mixer.music.play(-1)
 
     def draw_story(self):
         # Desenha a tela do prologo sobre o fundo do menu.
@@ -285,6 +351,205 @@ class Menu:
         self.draw_intro_transition()
         self.start_game()
 
+    def draw_pydew_red_warning(self, surface, width, height):
+        # Adiciona uma camada vermelha transparente sobre o Pydew no fim da transicao.
+        red_overlay = pg.Surface((width, height), pg.SRCALPHA)
+        red_overlay.fill((200, 0, 0, 120))
+        surface.blit(red_overlay, (0, 0))
+
+    def reset_transition_rain(self, width, height, drop_count=90):
+        # Prepara as gotas usadas na chuva da fase vermelha.
+        self.transition_rain_drops = []
+        for _ in range(drop_count):
+            self.transition_rain_drops.append({
+                'x': random.uniform(0, width),
+                'y': random.uniform(-height, height),
+                'length': random.randint(10, 22),
+                'speed': random.uniform(520, 880),
+            })
+
+    def draw_transition_rain(self, surface, width, height, dt):
+        # Desenha uma chuva inclinada sobre o mapa durante a fase vermelha.
+        if not self.transition_rain_drops:
+            self.reset_transition_rain(width, height)
+
+        rain_surface = pg.Surface((width, height), pg.SRCALPHA)
+        for drop in self.transition_rain_drops:
+            start_pos = (int(drop['x']), int(drop['y']))
+            end_pos = (int(drop['x'] - 8), int(drop['y'] + drop['length']))
+            pg.draw.line(rain_surface, (210, 230, 255, 130), start_pos, end_pos, 2)
+
+            drop['x'] -= 140 * dt
+            drop['y'] += drop['speed'] * dt
+            if drop['y'] - drop['length'] > height or drop['x'] < -20:
+                drop['x'] = random.uniform(0, width + 60)
+                drop['y'] = random.uniform(-120, -20)
+                drop['length'] = random.randint(10, 22)
+                drop['speed'] = random.uniform(520, 880)
+
+        surface.blit(rain_surface, (0, 0))
+
+    def draw_transition_boss(self, surface, width, height, red_elapsed_ms):
+        # Faz o boss descer pelo mapa depois de 2 segundos da tela vermelha.
+        if not self.boss_transition_sprite or red_elapsed_ms < 2000:
+            return
+
+        progress = min(1.0, (red_elapsed_ms - 2000) / 3500)
+        target_height = int(height * 0.5)
+        scale = target_height / self.boss_transition_sprite.get_height()
+        target_width = max(1, int(self.boss_transition_sprite.get_width() * scale))
+        boss_surface = pg.transform.smoothscale(
+            self.boss_transition_sprite,
+            (target_width, target_height),
+        )
+        x = (width - target_width) // 2
+        start_y = -target_height
+        end_y = height - target_height - 40
+        y = int(start_y + (end_y - start_y) * progress)
+        surface.blit(boss_surface, (x, y))
+
+    def apply_transition_shake(self, surface, width, height, red_elapsed_ms):
+        # Faz a tela tremer enquanto o boss desce durante a fase vermelha.
+        if red_elapsed_ms < 2000:
+            return
+
+        shake_progress = min(1.0, (red_elapsed_ms - 2000) / 3500)
+        amplitude = max(2, int(16 * (1.0 - shake_progress * 0.35)))
+        offset_x = random.randint(-amplitude, amplitude)
+        offset_y = random.randint(-amplitude, amplitude)
+
+        frame = surface.copy()
+        surface.fill((8, 0, 0))
+        surface.blit(frame, (offset_x, offset_y))
+
+    def load_pydew_level(self):
+        # Carrega os modulos do Pydew temporariamente sem poluir os imports do Jhoon.
+        if not os.path.exists(self.pydew_code_path):
+            return None, None
+
+        stashed_modules = {}
+        conflicting_names = (
+            'settings', 'menu', 'player', 'support', 'timer', 'level',
+            'overlay', 'sprites', 'transition', 'soil', 'sky'
+        )
+        for name in conflicting_names:
+            stashed_modules[name] = sys.modules.get(name)
+            sys.modules.pop(name, None)
+
+        inserted_path = False
+        if self.pydew_code_path not in sys.path:
+            sys.path.insert(0, self.pydew_code_path)
+            inserted_path = True
+
+        try:
+            pydew_settings = importlib.import_module('settings')
+            pydew_level = importlib.import_module('level')
+            runtime_state = {
+                'stashed_modules': stashed_modules,
+                'inserted_path': inserted_path,
+            }
+            return (pydew_level.Level, pydew_settings), runtime_state
+        except Exception:
+            self.restore_pydew_imports({
+                'stashed_modules': stashed_modules,
+                'inserted_path': inserted_path,
+            })
+            return None, None
+
+    def restore_pydew_imports(self, runtime_state):
+        # Remove os modulos temporarios do Pydew e restaura os modulos originais.
+        pydew_root = os.path.abspath(self.pydew_root_path)
+        for name, module in list(sys.modules.items()):
+            module_path = getattr(module, '__file__', None)
+            if module_path and os.path.abspath(module_path).startswith(pydew_root):
+                sys.modules.pop(name, None)
+
+        if runtime_state.get('inserted_path') and self.pydew_code_path in sys.path:
+            sys.path.remove(self.pydew_code_path)
+
+        for name, module in runtime_state.get('stashed_modules', {}).items():
+            if module is not None:
+                sys.modules[name] = module
+
+    def run_pydew_preview(self, duration_ms=20000, warning_duration_ms=8000):
+        # Executa o Pydew na mesma janela, depois entra em alerta vermelho e troca para o Jhoon.
+        pydew_runtime, runtime_state = self.load_pydew_level()
+        if not pydew_runtime:
+            return
+
+        pg.mixer.music.stop()
+        previous_caption = pg.display.get_caption()[0]
+        previous_mouse_visible = pg.mouse.get_visible()
+
+        try:
+            PydewLevel, pydew_settings = pydew_runtime
+            pydew_size = (pydew_settings.SCREEN_WIDTH, pydew_settings.SCREEN_HEIGHT)
+            self.screen = pg.display.set_mode(pydew_size)
+            pg.display.set_caption('Jhoon')
+            pg.mouse.set_visible(False)
+            pg.event.set_grab(False)
+            pg.event.clear()
+
+            level = PydewLevel()
+            start_time = pg.time.get_ticks()
+            total_duration_ms = duration_ms + warning_duration_ms
+            audio_stopped = False
+            self.reset_transition_rain(pydew_size[0], pydew_size[1])
+
+            while True:
+                for event in pg.event.get():
+                    if event.type == pg.QUIT:
+                        pg.quit()
+                        sys.exit()
+                    if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                        return
+
+                elapsed = pg.time.get_ticks() - start_time
+                if elapsed >= total_duration_ms:
+                    break
+
+                dt = self.clock.tick(60) / 1000
+                level.run(dt)
+                if elapsed >= duration_ms:
+                    if not audio_stopped:
+                        pg.mixer.stop()
+                        pg.mixer.music.load(self.menu_theme_path)
+                        pg.mixer.music.set_volume(0.3)
+                        pg.mixer.music.play(-1)
+                        self.keep_transition_music = True
+                        audio_stopped = True
+                    red_elapsed_ms = elapsed - duration_ms
+                    self.draw_transition_rain(self.screen, pydew_size[0], pydew_size[1], dt)
+                    self.draw_pydew_red_warning(self.screen, pydew_size[0], pydew_size[1])
+                    self.draw_transition_boss(self.screen, pydew_size[0], pydew_size[1], red_elapsed_ms)
+                    self.apply_transition_shake(self.screen, pydew_size[0], pydew_size[1], red_elapsed_ms)
+                pg.display.update()
+        except Exception:
+            pass
+        finally:
+            if not self.keep_transition_music:
+                pg.mixer.stop()
+            self.transition_rain_drops = []
+            self.restore_pydew_imports(runtime_state)
+            self.screen = pg.display.set_mode(RES)
+            pg.display.set_caption(previous_caption or 'Jhoon')
+            pg.mouse.set_visible(previous_mouse_visible)
+            pg.event.set_grab(False)
+            pg.event.clear()
+
+    def run_opening_sequence(self):
+        # Mostra a abertura automatica com Pydew antes dos menus do Jhoon.
+        if self.opening_sequence_done:
+            return
+        self.run_pydew_preview()
+        self.screen = pg.display.set_mode(RES)
+        pg.display.set_caption('Jhoon')
+        pg.mouse.set_visible(True)
+        pg.event.set_grab(False)
+        if not pg.mixer.music.get_busy():
+            self.play_menu_theme()
+        self.opening_sequence_done = True
+
     def run_story(self):
         # Loop da tela de prologo ate o usuario decidir continuar.
         while True:
@@ -302,12 +567,10 @@ class Menu:
             self.clock.tick(60)
 
     def run(self):
-        # Configura o menu inicial com mouse visivel e musica em loop.
+        # Configura o menu inicial e executa a abertura automatica.
         pg.mouse.set_visible(True)
         pg.event.set_grab(False)
-        pg.mixer.music.load(self.sound_path)
-        pg.mixer.music.set_volume(0.4)
-        pg.mixer.music.play(-1)
+        self.run_opening_sequence()
 
         # Loop principal do menu inicial.
         while True:
@@ -317,7 +580,7 @@ class Menu:
                     if event.key == pg.K_RETURN:
                         action = self.run_selection_menu()
                         if action == 'new_game':
-                            self.run_story()
+                            self.run_intro_video()
                             return 'new_game'
                         if action == 'load_game':
                             self.start_game()
@@ -326,7 +589,7 @@ class Menu:
                     if self.button_rect.collidepoint(event.pos):
                         action = self.run_selection_menu()
                         if action == 'new_game':
-                            self.run_story()
+                            self.run_intro_video()
                             return 'new_game'
                         if action == 'load_game':
                             self.start_game()

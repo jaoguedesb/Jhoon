@@ -40,8 +40,13 @@ class Sound:
         # Guarda qual musica esta tocando para evitar recarregar a mesma faixa sem necessidade.
         self.current_theme_path = None
         pg.mixer.music.set_volume(self.music_volume)
-        # Inicia a musica principal do jogo.
-        self.play_main_theme()
+        # Mantem a trilha atual se ela ja tiver sido iniciada pela transicao do menu.
+        if getattr(self.game, 'transition_music_active', False) and pg.mixer.music.get_busy():
+            self.current_theme_path = self.main_theme_path
+            self.game.transition_music_active = False
+        else:
+            # Inicia a musica principal do jogo.
+            self.play_main_theme()
 
     def play_theme(self, theme_path):
         # Troca a musica atual apenas se a faixa desejada ainda nao estiver tocando.
