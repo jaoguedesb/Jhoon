@@ -177,27 +177,31 @@ class Menu:
         pg.display.flip()
 
     def move_quit_button(self, button, mouse_pos):
-        # Faz o botao de quit fugir do cursor e voltar devagar quando o mouse se afasta.
+        # Faz o botao de quit fugir do cursor com bastante antecedencia.
         current_x, current_y = button['center']
         home_x, home_y = button['home_center']
         dx = current_x - mouse_pos[0]
         dy = current_y - mouse_pos[1]
         distance = math.hypot(dx, dy)
-        threat_radius = 240
+        threat_radius = 340
+        panic_radius = 170
 
         if distance < threat_radius:
             if distance < 1:
                 dx, dy = random.uniform(-1, 1), random.uniform(-1, 1)
                 distance = max(1.0, math.hypot(dx, dy))
-            escape_step = 28
-            current_x += (dx / distance) * escape_step
-            current_y += (dy / distance) * escape_step
+            normalized_x = dx / distance
+            normalized_y = dy / distance
+            escape_strength = 44 if distance < panic_radius else 30
+            side_bias = 18 if mouse_pos[0] < current_x else -18
+            current_x += normalized_x * escape_strength + side_bias
+            current_y += normalized_y * escape_strength
         else:
             current_x += (home_x - current_x) * 0.08
             current_y += (home_y - current_y) * 0.08
 
-        margin_x = 220
-        min_y = HEIGHT // 2 + 150
+        margin_x = 250
+        min_y = HEIGHT // 2 + 135
         max_y = HEIGHT - 80
         current_x = max(margin_x, min(WIDTH - margin_x, current_x))
         current_y = max(min_y, min(max_y, current_y))
@@ -230,8 +234,6 @@ class Menu:
                                 self.selection_feedback_until = pg.time.get_ticks() + 1600
                             if button['id'] == 'quit':
                                 self.move_quit_button(button, pg.mouse.get_pos())
-                                self.selection_feedback = 'Nao da pra clicar em Quit'
-                                self.selection_feedback_until = pg.time.get_ticks() + 900
 
             self.draw_selection_menu()
             self.clock.tick(60)
