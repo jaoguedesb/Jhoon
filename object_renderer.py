@@ -67,6 +67,10 @@ class ObjectRenderer:
         self.draw_final_boss_bar()
         self.draw_interaction_prompt()
         self.draw_top_message()
+<<<<<<< HEAD
+=======
+        self.draw_console_overlay()
+>>>>>>> 51e6147 (Initial project import and gameplay updates)
 
     def win(self):
         # Exibe a tela de vitoria.
@@ -270,6 +274,54 @@ class ObjectRenderer:
         self.screen.blit(border_surface, box.topleft)
         self.screen.blit(text_surface, text_surface.get_rect(center=box.center))
 
+<<<<<<< HEAD
+=======
+    def draw_console_overlay(self):
+        # Desenha o terminal interno e as mensagens de retorno dos comandos.
+        time_now = pg.time.get_ticks()
+        if not self.game.console_active and time_now >= getattr(self.game, 'console_message_until', 0):
+            self.game.console_message = ''
+            return
+
+        overlay = pg.Surface(RES, pg.SRCALPHA)
+        overlay.fill((0, 0, 0, 90 if self.game.console_active else 0))
+        self.screen.blit(overlay, (0, 0))
+
+        box_width = min(WIDTH - 80, 780)
+        box_height = 150 if self.game.console_active else 64
+        box = pg.Rect(
+            HALF_WIDTH - box_width // 2,
+            HEIGHT - box_height - 34,
+            box_width,
+            box_height
+        )
+
+        panel = pg.Surface(box.size, pg.SRCALPHA)
+        panel.fill((10, 14, 18, 235))
+        self.screen.blit(panel, box.topleft)
+        pg.draw.rect(self.screen, (255, 220, 120), box, 2, border_radius=16)
+
+        if self.game.console_active:
+            title = self.interact_font.render('Terminal', True, (255, 230, 150))
+            hint = self.hud_label_font.render('Digite e pressione ENTER', True, (190, 210, 220))
+            prompt = self.interact_font.render(f'> {self.game.console_input}', True, (220, 255, 220))
+            cursor_x = box.x + 26 + prompt.get_width() + 2
+            cursor_y = box.y + 92
+
+            self.screen.blit(title, (box.x + 24, box.y + 18))
+            self.screen.blit(hint, (box.x + 26, box.y + 56))
+            self.screen.blit(prompt, (box.x + 26, box.y + 88))
+
+            # Cursor piscando para indicar que o terminal esta aguardando texto.
+            if (time_now // 400) % 2 == 0:
+                pg.draw.line(self.screen, (220, 255, 220), (cursor_x, cursor_y), (cursor_x, cursor_y + 26), 2)
+
+        if self.game.console_message and time_now < self.game.console_message_until:
+            message_surface = self.hud_label_font.render(self.game.console_message, True, (255, 244, 188))
+            message_rect = message_surface.get_rect(midleft=(box.x + 22, box.centery if not self.game.console_active else box.y + box.height - 22))
+            self.screen.blit(message_surface, message_rect)
+
+>>>>>>> 51e6147 (Initial project import and gameplay updates)
     def draw_background(self):
         # Desenha o ceu com movimento lateral baseado na rotacao do jogador.
         self.sky_offset = (self.sky_offset + 4.5 * self.game.player.rel) % WIDTH

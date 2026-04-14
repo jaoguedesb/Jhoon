@@ -9,6 +9,10 @@ NPC_CLASSES_BY_NAME = {
     'EsqueletoNPC': EsqueletoNPC,
     'AraraNPC': AraraNPC,
     'FinalBossNPC': FinalBossNPC,
+<<<<<<< HEAD
+=======
+    'SecretBossNPC': SecretBossNPC,
+>>>>>>> 51e6147 (Initial project import and gameplay updates)
 }
 
 MAP_01_ROOM_NPC_LAYOUT = [
@@ -232,6 +236,48 @@ class ObjectHandler:
         self.game.sound.play_boss_theme()
         self.game.object_renderer.set_default_sky()
 
+<<<<<<< HEAD
+=======
+    def spawn_secret_boss(self, amount=10):
+        # Cria varios bosses secretos espalhados em tiles livres quando o comando do terminal for usado.
+        occupied_tiles = {(int(sprite.x), int(sprite.y)) for sprite in self.sprite_list}
+        occupied_tiles.update({(int(npc.x), int(npc.y)) for npc in self.npc_list if getattr(npc, 'alive', False)})
+        occupied_tiles.add(self.game.player.map_pos)
+        spawned_bosses = []
+
+        for _ in range(amount):
+            x, y = self.get_random_spread_free_tile(occupied_tiles, min_distance=4)
+            occupied_tiles.add((x, y))
+            boss = SecretBossNPC(self.game, pos=(x + 0.5, y + 0.5))
+            self.add_npc(boss)
+            spawned_bosses.append(boss)
+
+        self.show_status_message(f'{len(spawned_bosses)} bosses secretos invocados')
+        return spawned_bosses
+
+    def get_random_spread_free_tile(self, blocked_tiles=None, min_distance=4, max_attempts=80):
+        # Procura um tile livre que tambem fique afastado dos tiles bloqueados para espalhar os bosses.
+        blocked_tiles = set(blocked_tiles or ())
+        valid_positions = []
+        for y in range(self.game.map.rows):
+            for x in range(self.game.map.cols):
+                tile = (x, y)
+                if tile in self.game.map.world_map or tile in blocked_tiles:
+                    continue
+                if all(math.hypot(x - bx, y - by) >= min_distance for bx, by in blocked_tiles):
+                    valid_positions.append(tile)
+
+        if valid_positions:
+            return valid_positions[randrange(len(valid_positions))]
+
+        for _ in range(max_attempts):
+            x, y = self.get_random_free_tile(blocked_tiles)
+            if all(math.hypot(x - bx, y - by) >= max(2, min_distance - 1) for bx, by in blocked_tiles):
+                return x, y
+
+        return self.get_random_free_tile(blocked_tiles)
+
+>>>>>>> 51e6147 (Initial project import and gameplay updates)
     def spawn_minigun_pickup(self, pos=None):
         # Cria o pickup da minigun perto do jogador depois que a horda e derrotada.
         x, y = pos if pos else self.get_tile_in_front_of_player()

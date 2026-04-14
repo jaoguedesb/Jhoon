@@ -452,6 +452,70 @@ class FinalBossNPC(NPC):
                 self.game.object_handler.add_sprite(projectile)
 
 
+<<<<<<< HEAD
+=======
+class SecretBossNPC(NPC):
+    def __init__(self, game, path='resources/sprites/npc/boss_secreto/boss-parado.png', pos=(11.5, 16.5),
+                 scale=5.1, shift=-0.24, animation_time=110):
+        # Boss secreto invocado por comando, com rajadas pesadas de bolas de fogo em varios angulos.
+        super().__init__(game, path, pos, scale, shift, animation_time)
+        self.idle_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_secreto/boss-parado.png')])
+        self.walk_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_secreto/boss-andando.png')])
+        self.attack_images = deque([self.load_single_scaled_image('resources/sprites/npc/boss_secreto/boss-atack.png')])
+        self.pain_images = deque(self.idle_images)
+        self.death_images = deque(self.idle_images)
+        self.images = deque(self.idle_images)
+        self.image = self.idle_images[0]
+        self.attack_dist = 12
+        self.health = 4800
+        self.max_health = self.health
+        self.attack_damage = 40
+        self.speed = 0.026
+        self.accuracy = 1.0
+        self.size = 30
+        self.name = 'PEGADINHA'
+        self.overlay_render = False
+        self.projectile_damage = 35
+        self.projectile_speed = 0.085
+        self.last_attack_time = -1
+
+    def can_spawn_secret_projectiles(self):
+        # Reaproveita um limite mais alto de projeteis por existirem varios bosses ao mesmo tempo.
+        active_projectiles = [
+            sprite for sprite in self.game.object_handler.sprite_list
+            if isinstance(sprite, BossProjectile) and not sprite.destroyed
+        ]
+        return len(active_projectiles) < max(MAX_BOSS_PROJECTILES * 4, 40)
+
+    def should_react_to_hit(self):
+        # O boss secreto nao pausa para animacao de dor.
+        return False
+
+    def attack(self):
+        # Dispara uma bola de fogo na mesma logica do boss final.
+        if not self.animation_trigger:
+            return
+
+        if self.animation_time_prev == self.last_attack_time:
+            return
+
+        if not self.can_spawn_secret_projectiles():
+            return
+
+        self.last_attack_time = self.animation_time_prev
+        self.game.sound.npc_shot.play()
+        projectile_angle = math.atan2(self.game.player.y - self.y, self.game.player.x - self.x)
+        projectile = BossProjectile(
+            self.game,
+            pos=(self.x, self.y),
+            angle=projectile_angle,
+            speed=self.projectile_speed,
+            damage=self.projectile_damage,
+        )
+        self.game.object_handler.add_sprite(projectile)
+
+
+>>>>>>> 51e6147 (Initial project import and gameplay updates)
 class FinalBossReflection(SpriteObject):
     def __init__(self, game, original, mirror_center, initial_pos):
         # Cria o reflexo do boss final que espelha posicao e acoes na fase 2.
