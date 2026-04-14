@@ -11,6 +11,7 @@ from weapon import *
 from sound import *
 from pathfinding import *
 from menu import Menu
+from save_system import SaveSystem
 
 
 class Game:
@@ -24,6 +25,10 @@ class Game:
         self.clock = pg.time.Clock()
         # delta_time armazena a duracao do ultimo frame para manter movimentos suaves.
         self.delta_time = 1
+        self.save_system = SaveSystem()
+        self.top_message = ''
+        self.top_message_until = 0
+        self.top_message_duration = 0
         # Define se o modo desenvolvedor esta ativo.
         self.dev_mode = False
         # global_trigger e um pulso periodico usado por animacoes e eventos temporizados.
@@ -32,13 +37,15 @@ class Game:
         pg.time.set_timer(self.global_event, 40)
         # Abre o menu inicial antes de comecar a partida.
         self.menu = Menu(self)
-        self.menu.run()
+        menu_action = self.menu.run()
+        if menu_action == 'load_game' and self.load_game():
+            return
         # Depois do menu, cria todos os sistemas da partida.
         self.new_game()
 
-    def new_game(self):
+    def new_game(self, map_id=None, show_intro_message=True):
         # Reinicia o estado principal do jogo e recria todos os modulos da fase.
-        self.map = Map(self)
+        self.map = Map(self, map_id=map_id)
         self.player = Player(self)
         self.object_renderer = ObjectRenderer(self)
         self.raycasting = RayCasting(self)
@@ -49,6 +56,8 @@ class Game:
         # Se o modo dev estiver ligado, reaplica os beneficios no novo jogo.
         if self.dev_mode:
             self.set_dev_mode(True)
+        if show_intro_message:
+            self.show_top_message('Pegue o gato', duration=4000)
 
     def set_dev_mode(self, enabled):
         # Liga ou desliga o modo desenvolvedor e ajusta vantagens do jogador.
@@ -67,8 +76,75 @@ class Game:
                 self.player.speed_multiplier = 1.0
 
     def open_dev_menu(self):
-        # Abre o menu de desenvolvedor durante a partida.
-        self.menu.run_dev_menu()
+        # Abre o menu de pausa durante a partida.
+        self.menu.run_pause_menu()
+
+    def has_save_game(self):
+        # Informa ao menu inicial se existe um save pronto para carregar.
+        return self.save_system.has_save()
+
+    def save_game(self):
+        # Serializa o estado atual da partida em arquivo para retomar depois.
+        payload = {
+            'dev_mode': self.dev_mode,
+            'map': self.map.serialize_state(),
+            'player': self.player.serialize_state(),
+            'weapon': self.weapon.serialize_state(),
+            'objects': self.object_handler.serialize_state(),
+        }
+        try:
+            self.save_system.save(payload)
+            return True
+        except (OSError, TypeError, ValueError):
+            return False
+
+    def show_top_message(self, message, duration=1800):
+        # Exibe um aviso grande no topo da tela com fade-out automatico.
+        self.top_message = message
+        self.top_message_duration = duration
+        self.top_message_until = pg.time.get_ticks() + duration
+
+    def load_game(self):
+        # Carrega o save existente e recompõe a partida exatamente no estado salvo.
+        try:
+            save_data = self.save_system.load()
+        except (OSError, ValueError):
+            return False
+        if not save_data:
+            return False
+
+        map_state = save_data.get('map', {})
+        self.new_game(map_id=map_state.get('map_id'), show_intro_message=False)
+        self.dev_mode = save_data.get('dev_mode', True)
+        self.map.apply_saved_state(map_state)
+        self.player.apply_saved_state(save_data.get('player', {}))
+        self.weapon.apply_saved_state(save_data.get('weapon', {}))
+        self.object_handler.apply_saved_state(save_data.get('objects', {}))
+        self.pathfinding.rebuild()
+        self.sync_loaded_state()
+        return True
+
+    def sync_loaded_state(self):
+        # Reaplica musica, ceu e mensagens corretas depois de carregar um save.
+        self.player.infinite_health = self.dev_mode or self.player.infinite_health
+        if self.dev_mode:
+            self.player.health = PLAYER_MAX_HEALTH
+
+        final_boss = self.object_handler.final_boss
+        if final_boss and final_boss.alive:
+            if final_boss.phase_two_triggered:
+                self.object_renderer.set_boss_phase_two_sky()
+                self.sound.play_boss_phase_two_theme()
+            else:
+                self.object_renderer.set_default_sky()
+                self.sound.play_boss_theme()
+        elif self.weapon.special_active:
+            self.object_renderer.set_default_sky()
+            self.sound.play_boost_theme()
+        else:
+            self.object_renderer.set_default_sky()
+            self.sound.play_main_theme()
+        self.object_handler.update_interaction_message()
 
     def update(self):
         # Atualiza a logica principal do jogo a cada frame.
@@ -100,7 +176,7 @@ class Game:
                 pg.quit()
                 sys.exit()
             elif event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                # ESC abre o menu de desenvolvedor durante a partida.
+                # ESC abre o menu de pausa durante a partida.
                 self.open_dev_menu()
             elif event.type == self.global_event:
                 # Marca o disparo do evento global temporizado.

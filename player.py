@@ -174,3 +174,27 @@ class Player:
     def map_pos(self):
         # Retorna a posicao atual do jogador em coordenadas inteiras do mapa.
         return int(self.x), int(self.y)
+
+    def serialize_state(self):
+        # Exporta o estado essencial do jogador para o sistema de save.
+        return {
+            'x': self.x,
+            'y': self.y,
+            'angle': self.angle,
+            'health': self.health,
+            'infinite_health': self.infinite_health,
+            'speed_multiplier': self.speed_multiplier,
+        }
+
+    def apply_saved_state(self, state):
+        # Restaura o estado do jogador a partir de um save carregado.
+        self.x = state.get('x', self.x)
+        self.y = state.get('y', self.y)
+        self.angle = state.get('angle', self.angle)
+        self.health = state.get('health', self.health)
+        self.infinite_health = state.get('infinite_health', self.infinite_health)
+        self.speed_multiplier = state.get('speed_multiplier', self.speed_multiplier)
+        self.shot = False
+        self.rel = 0
+        self.is_moving = False
+        self.time_prev = pg.time.get_ticks()

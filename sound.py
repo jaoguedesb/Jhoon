@@ -1,5 +1,6 @@
 import pygame as pg
 from settings import resource_path
+from random import choice
 
 
 class Sound:
@@ -18,6 +19,13 @@ class Sound:
         self.npc_shot = pg.mixer.Sound(resource_path('resources', 'sound', 'npc_attack.wav'))
         # Ajusta o volume do tiro dos NPCs para nao ficar alto demais.
         self.npc_shot.set_volume(0.2)
+        self.arara_sounds = [
+            pg.mixer.Sound(resource_path('resources', 'sound', 'Arara_sound_1.ogg')),
+            pg.mixer.Sound(resource_path('resources', 'sound', 'Arara_sound_2.ogg')),
+            pg.mixer.Sound(resource_path('resources', 'sound', 'Arara_sound_3.ogg')),
+        ]
+        for arara_sound in self.arara_sounds:
+            arara_sound.set_volume(0.28)
         self.player_pain = pg.mixer.Sound(resource_path('resources', 'sound', 'player_pain.wav'))
         self.meca_shot = pg.mixer.Sound(resource_path('resources', 'sound', 'meca-som.ogg'))
         # Ajusta o volume do disparo da minigun.
@@ -59,3 +67,11 @@ class Sound:
     def play_boss_phase_two_theme(self):
         # Toca a trilha especifica da segunda fase do boss.
         self.play_theme(self.boss_phase_two_theme_path)
+
+    def play_arara_attack(self):
+        # Toca aleatoriamente um dos dois sons normais de ataque da arara.
+        choice(self.arara_sounds[:2]).play()
+
+    def play_arara_death(self):
+        # Usa o terceiro som da arara como morte.
+        self.arara_sounds[2].play()

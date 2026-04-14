@@ -298,6 +298,19 @@ class AraraNPC(NPC):
         self.accuracy = 0.25
         self.name = 'Arara'
 
+    def attack(self):
+        # A arara usa um dos dois sons principais de forma randomizada quando ataca.
+        if self.animation_trigger:
+            self.game.sound.play_arara_attack()
+            if random() < self.accuracy:
+                self.game.player.get_damage(self.attack_damage)
+
+    def check_health(self):
+        # A morte da arara usa o terceiro audio dedicado.
+        if self.health < 1:
+            self.alive = False
+            self.game.sound.play_arara_death()
+
 
 class FinalBossNPC(NPC):
     def __init__(self, game, path='resources/sprites/npc/boss_final/boss.png', pos=(11.5, 16.5),
@@ -312,7 +325,7 @@ class FinalBossNPC(NPC):
         self.images = deque(self.idle_images)
         self.image = self.idle_images[0]
         self.attack_dist = 9
-        self.health = 4200
+        self.health = 3200
         self.max_health = self.health
         self.attack_damage = 35
         self.speed = 0.02
@@ -320,7 +333,7 @@ class FinalBossNPC(NPC):
         self.phase_two_speed = 0.034
         self.accuracy = 0.45
         self.size = 28
-        self.name = 'MESTRE DAS PEGADINHAS'
+        self.name = 'ENAD INHO'
         self.overlay_render = False
         self.projectile_damage = 35
         self.phase_two_triggered = False

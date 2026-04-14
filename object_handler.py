@@ -4,6 +4,46 @@ from npc import *
 from random import choices, randrange
 import math
 
+NPC_CLASSES_BY_NAME = {
+    'DavyNPC': DavyNPC,
+    'EsqueletoNPC': EsqueletoNPC,
+    'AraraNPC': AraraNPC,
+    'FinalBossNPC': FinalBossNPC,
+}
+
+MAP_01_ROOM_NPC_LAYOUT = [
+    (DavyNPC, (12.5, 3.5)),
+    (DavyNPC, (12.5, 12.5)),
+    (EsqueletoNPC, (2.5, 18.5)),
+    (EsqueletoNPC, (13.5, 18.5)),
+    (EsqueletoNPC, (2.5, 29.5)),
+    (EsqueletoNPC, (13.5, 29.5)),
+    (DavyNPC, (6.5, 18.5)),
+    (DavyNPC, (9.5, 18.5)),
+    (DavyNPC, (5.5, 23.5)),
+    (DavyNPC, (10.5, 23.5)),
+    (DavyNPC, (6.5, 28.5)),
+    (DavyNPC, (9.5, 28.5)),
+    (EsqueletoNPC, (2.5, 33.5)),
+    (EsqueletoNPC, (13.5, 33.5)),
+    (EsqueletoNPC, (2.5, 45.5)),
+    (EsqueletoNPC, (13.5, 45.5)),
+    (DavyNPC, (5.5, 37.5)),
+    (DavyNPC, (10.5, 37.5)),
+    (DavyNPC, (5.5, 44.5)),
+    (DavyNPC, (10.5, 44.5)),
+    (AraraNPC, (7.5, 34.5)),
+    (AraraNPC, (8.5, 41.5)),
+    (EsqueletoNPC, (2.5, 49.5)),
+    (EsqueletoNPC, (13.5, 49.5)),
+    (EsqueletoNPC, (5.5, 56.5)),
+    (EsqueletoNPC, (10.5, 56.5)),
+    (AraraNPC, (6.5, 50.5)),
+    (AraraNPC, (9.5, 50.5)),
+    (AraraNPC, (5.5, 61.5)),
+    (AraraNPC, (10.5, 61.5)),
+]
+
 
 class ObjectHandler:
     def __init__(self, game):
@@ -26,6 +66,13 @@ class ObjectHandler:
         self.interaction_message = ''
         self.status_message = ''
         self.status_message_until = 0
+        self.racao_path = 'resources/sprites/racao/racao-0.png'
+        self.minigun_image_paths = [
+            'resources/sprites/minigun/minigun-lado-0-Photoroom.png',
+            'resources/sprites/minigun/minigun-lado-1-Photoroom.png',
+            'resources/sprites/minigun/minigun-lado-2-Photoroom.png',
+            'resources/sprites/minigun/minigun-lado-3-Photoroom.png',
+        ]
 
         # Define quantidade e distribuicao inicial de inimigos comuns.
         self.enemies = 20
@@ -36,17 +83,8 @@ class ObjectHandler:
         self.spawn_npc()
 
         # Adiciona sprites decorativos e luzes do cenario.
-        for sprite_pos in self.get_static_sprite_positions():
-            add_sprite(SpriteObject(game, pos=sprite_pos))
-        add_sprite(PickupSprite(
-            game,
-            path='resources/hub/cat.png',
-            pos=(5.2, 4.0),
-            scale=0.22,
-            shift=0.9,
-            pickup_distance=0.9,
-            on_pickup=self.game.weapon.equip_shotgun,
-        ))
+        self.add_static_sprites()
+        self.add_cat_pickup()
         # Espalha pickups do bonus especial pelo mapa.
         self.spawn_racao()
 
@@ -88,12 +126,59 @@ class ObjectHandler:
             (1.5, 24.5),
         ]
 
+    def add_static_sprites(self):
+        # Recria os sprites decorativos padrao da fase atual.
+        for sprite_pos in self.get_static_sprite_positions():
+            self.add_sprite(SpriteObject(self.game, pos=sprite_pos))
+
+    def add_cat_pickup(self, pos=(5.2, 4.0)):
+        # Cria o pickup inicial que libera a shotgun.
+        pickup = PickupSprite(
+            self.game,
+            path='resources/hub/cat.png',
+            pos=pos,
+            scale=0.22,
+            shift=0.9,
+            pickup_distance=0.9,
+            on_pickup=self.game.weapon.equip_shotgun,
+        )
+        pickup.save_kind = 'cat_pickup'
+        self.add_sprite(pickup)
+
+    def create_racao_pickup(self, pos):
+        # Monta um pickup de racao com metadados de save.
+        pickup = AnimatedPickupSprite(
+            self.game,
+            path=self.racao_path,
+            pos=pos,
+            on_pickup=self.game.weapon.activate_racao_boost,
+            scale=0.35,
+            shift=0.55,
+            pickup_distance=0.75,
+            animation_time=140,
+        )
+        pickup.save_kind = 'racao_pickup'
+        return pickup
+
     def spawn_npc(self):
         # Gera a horda inicial de inimigos em posicoes livres do mapa.
+        if self.game.map.map_id == 'map_01_llm':
+            self.spawn_map_01_room_npcs()
+            return
         for _ in range(self.enemies):
             npc = choices(self.npc_types, self.weights)[0]
             x, y = self.get_random_free_tile(self.restricted_area)
             self.add_npc(npc(self.game, pos=(x + 0.5, y + 0.5)))
+
+    def spawn_map_01_room_npcs(self):
+        # Distribui inimigos por sala com composicao fixa para a primeira fase.
+        occupied_tiles = set()
+        for npc_class, pos in MAP_01_ROOM_NPC_LAYOUT:
+            tile = (int(pos[0]), int(pos[1]))
+            if tile in occupied_tiles or tile in self.game.map.world_map:
+                continue
+            occupied_tiles.add(tile)
+            self.add_npc(npc_class(self.game, pos=pos))
 
     def get_random_free_tile(self, blocked_tiles=None):
         # Procura aleatoriamente um tile que nao seja parede nem bloqueado.
@@ -124,7 +209,6 @@ class ObjectHandler:
 
     def spawn_racao(self, amount=5):
         # Gera pickups de racao em tiles livres e nao ocupados.
-        racao_path = 'resources/sprites/racao/racao-0.png'
         occupied_tiles = {(int(sprite.x), int(sprite.y)) for sprite in self.sprite_list}
         occupied_tiles.update({(int(npc.x), int(npc.y)) for npc in self.npc_list})
         occupied_tiles.add(self.game.player.map_pos)
@@ -133,16 +217,7 @@ class ObjectHandler:
         for _ in range(amount):
             x, y = self.get_random_free_tile(occupied_tiles | self.restricted_area)
             occupied_tiles.add((x, y))
-            self.add_sprite(AnimatedPickupSprite(
-                self.game,
-                path=racao_path,
-                pos=(x + 0.5, y + 0.5),
-                on_pickup=self.game.weapon.activate_racao_boost,
-                scale=0.35,
-                shift=0.55,
-                pickup_distance=0.75,
-                animation_time=140,
-            ))
+            self.add_sprite(self.create_racao_pickup((x + 0.5, y + 0.5)))
 
     def spawn_final_boss(self):
         # Cria o boss final em um tile livre quando ele for liberado.
@@ -157,17 +232,12 @@ class ObjectHandler:
         self.game.sound.play_boss_theme()
         self.game.object_renderer.set_default_sky()
 
-    def spawn_minigun_pickup(self):
+    def spawn_minigun_pickup(self, pos=None):
         # Cria o pickup da minigun perto do jogador depois que a horda e derrotada.
-        x, y = self.get_tile_in_front_of_player()
+        x, y = pos if pos else self.get_tile_in_front_of_player()
         self.minigun_pickup = SequenceAnimatedPickupSprite(
             self.game,
-            image_paths=[
-                'resources/sprites/minigun/minigun-lado-0-Photoroom.png',
-                'resources/sprites/minigun/minigun-lado-1-Photoroom.png',
-                'resources/sprites/minigun/minigun-lado-2-Photoroom.png',
-                'resources/sprites/minigun/minigun-lado-3-Photoroom.png',
-            ],
+            image_paths=self.minigun_image_paths,
             pos=(x, y),
             on_pickup=self.pick_minigun,
             scale=0.95,
@@ -175,6 +245,7 @@ class ObjectHandler:
             pickup_distance=0.95,
             animation_time=100,
         )
+        self.minigun_pickup.save_kind = 'minigun_pickup'
         self.add_sprite(self.minigun_pickup)
 
     def pick_minigun(self):
@@ -282,3 +353,105 @@ class ObjectHandler:
     def add_sprite(self, sprite):
         # Adiciona um novo sprite ao gerenciador.
         self.sprite_list.append(sprite)
+
+    def serialize_state(self):
+        # Salva a progressao da fase, inimigos vivos e pickups restantes.
+        return {
+            'horde_cleared': self.horde_cleared,
+            'final_boss_spawned': self.final_boss_spawned,
+            'npcs': [
+                self.serialize_npc(npc)
+                for npc in self.npc_list
+                if npc.alive and not isinstance(npc, FinalBossReflection)
+            ],
+            'pickups': self.serialize_pickups(),
+        }
+
+    def serialize_npc(self, npc):
+        # Converte um NPC vivo para um formato simples de save.
+        data = {
+            'type': type(npc).__name__,
+            'x': npc.x,
+            'y': npc.y,
+            'health': npc.health,
+            'player_search_trigger': getattr(npc, 'player_search_trigger', False),
+        }
+        if isinstance(npc, FinalBossNPC):
+            data['phase_two_triggered'] = npc.phase_two_triggered
+            data['phase_two_reflection_center'] = (
+                list(npc.phase_two_reflection_center) if npc.phase_two_reflection_center else None
+            )
+        return data
+
+    def serialize_pickups(self):
+        # Salva apenas os pickups que ainda continuam no mapa.
+        pickups = {
+            'cat_pickup_active': False,
+            'racao_pickups': [],
+            'minigun_pickup': None,
+        }
+        for sprite in self.sprite_list:
+            if getattr(sprite, 'picked', False) or getattr(sprite, 'destroyed', False):
+                continue
+            kind = getattr(sprite, 'save_kind', None)
+            if kind == 'cat_pickup':
+                pickups['cat_pickup_active'] = True
+            elif kind == 'racao_pickup':
+                pickups['racao_pickups'].append([sprite.x, sprite.y])
+            elif kind == 'minigun_pickup':
+                pickups['minigun_pickup'] = [sprite.x, sprite.y]
+        return pickups
+
+    def apply_saved_state(self, state):
+        # Reconstroi inimigos e pickups a partir do save, preservando a fase atual.
+        self.sprite_list = []
+        self.npc_list = []
+        self.npc_positions = {}
+        self.final_boss = None
+        self.minigun_pickup = None
+        self.interactable_list = []
+        self.interaction_message = ''
+        self.status_message = ''
+        self.status_message_until = 0
+        self.horde_cleared = state.get('horde_cleared', False)
+        self.final_boss_spawned = state.get('final_boss_spawned', False)
+
+        self.add_static_sprites()
+
+        pickups = state.get('pickups', {})
+        if pickups.get('cat_pickup_active'):
+            self.add_cat_pickup()
+        for x, y in pickups.get('racao_pickups', []):
+            self.add_sprite(self.create_racao_pickup((x, y)))
+        minigun_pickup = pickups.get('minigun_pickup')
+        if minigun_pickup:
+            self.spawn_minigun_pickup((minigun_pickup[0], minigun_pickup[1]))
+
+        for npc_data in state.get('npcs', []):
+            npc = self.restore_npc(npc_data)
+            if npc:
+                self.add_npc(npc)
+                if isinstance(npc, FinalBossNPC):
+                    self.final_boss = npc
+                    self.final_boss_spawned = True
+                    if npc_data.get('phase_two_triggered'):
+                        npc.activate_phase_two()
+                        center = npc_data.get('phase_two_reflection_center')
+                        if center:
+                            npc.phase_two_reflection_center = (center[0], center[1])
+                            if npc.phase_two_reflection:
+                                npc.phase_two_reflection.mirror_center = npc.phase_two_reflection_center
+                                npc.phase_two_reflection.sync_with_original()
+
+        self.npc_positions = {npc.map_pos for npc in self.npc_list if npc.alive}
+        self.update_interaction_message()
+
+    def restore_npc(self, npc_data):
+        # Recria um NPC a partir do registro salvo em arquivo.
+        npc_class = NPC_CLASSES_BY_NAME.get(npc_data.get('type'))
+        if not npc_class:
+            return None
+        npc = npc_class(self.game, pos=(npc_data.get('x', 0.5), npc_data.get('y', 0.5)))
+        npc.health = npc_data.get('health', npc.health)
+        npc.player_search_trigger = npc_data.get('player_search_trigger', False)
+        return npc

@@ -318,3 +318,50 @@ class Weapon(FrameSprite):
         self.update_minigun_animation()
         self.animate_shot()
         self.animate_movement()
+
+    def serialize_state(self):
+        # Salva o estado atual da arma, usando tempos relativos para continuar validos apos recarregar.
+        time_now = pg.time.get_ticks()
+        return {
+            'weapon_type': self.weapon_type,
+            'special_active': self.special_active,
+            'special_remaining_ms': max(0, self.special_end_time - time_now),
+            'special_cooldown_remaining_ms': max(0, self.special_cooldown_until - time_now),
+            'special_shot_remaining_ms': max(0, self.special_shot_until - time_now),
+        }
+
+    def apply_saved_state(self, state):
+        # Restaura a arma equipada e os timers associados ao modo especial.
+        time_now = pg.time.get_ticks()
+        weapon_type = state.get('weapon_type', 'hand')
+        special_active = state.get('special_active', False)
+
+        self.special_active = False
+        self.special_end_time = 0
+        self.special_cooldown_until = 0
+        self.special_shot_until = 0
+        self.pending_damage = False
+        self.reloading = False
+        self.frame_counter = 0
+
+        if weapon_type == 'minigun':
+            self.equip_minigun()
+            return
+
+        if special_active:
+            self.set_weapon('special')
+            self.special_active = True
+            self.special_end_time = time_now + state.get('special_remaining_ms', 0)
+            self.special_cooldown_until = time_now + state.get('special_cooldown_remaining_ms', 0)
+            self.special_shot_until = time_now + state.get('special_shot_remaining_ms', 0)
+            self.game.player.speed_multiplier = 1.8
+            if time_now < self.special_shot_until and self.special_shot_image is not None:
+                self.image = self.special_shot_image
+            elif self.special_idle_image is not None:
+                self.image = self.special_idle_image
+            return
+
+        if weapon_type in self.config:
+            self.set_weapon(weapon_type)
+        else:
+            self.set_weapon('hand')

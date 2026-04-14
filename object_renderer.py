@@ -51,6 +51,7 @@ class ObjectRenderer:
         # Fontes usadas em textos do HUD.
         self.hud_label_font = pg.font.SysFont('couriernew', 24, bold=True)
         self.interact_font = pg.font.SysFont('couriernew', 30, bold=True)
+        self.top_message_font = pg.font.SysFont('couriernew', 44, bold=True)
 
     def draw(self):
         # Desenha os elementos de fundo e depois todos os objetos 3D/sprites da cena.
@@ -65,7 +66,7 @@ class ObjectRenderer:
         self.draw_player_face()
         self.draw_final_boss_bar()
         self.draw_interaction_prompt()
-        self.draw_mecha_status()
+        self.draw_top_message()
 
     def win(self):
         # Exibe a tela de vitoria.
@@ -242,6 +243,32 @@ class ObjectRenderer:
         status_text = 'MINIGUN EQUIPADA'
         status_surface = self.interact_font.render(status_text, True, (255, 220, 120))
         self.screen.blit(status_surface, (32, 26))
+
+    def draw_top_message(self):
+        # Exibe um aviso grande no topo da tela e dissolve a opacidade com o tempo.
+        message = getattr(self.game, 'top_message', '')
+        if not message:
+            return
+
+        time_now = pg.time.get_ticks()
+        remaining = self.game.top_message_until - time_now
+        if remaining <= 0:
+            self.game.top_message = ''
+            return
+
+        progress = remaining / max(1, self.game.top_message_duration)
+        alpha = max(0, min(255, int(255 * progress)))
+
+        text_surface = self.top_message_font.render(message, True, (255, 245, 196))
+        text_surface.set_alpha(alpha)
+        box = text_surface.get_rect(center=(HALF_WIDTH, 62)).inflate(42, 26)
+        panel = pg.Surface(box.size, pg.SRCALPHA)
+        panel.fill((10, 12, 16, min(190, alpha)))
+        border_surface = pg.Surface(box.size, pg.SRCALPHA)
+        pg.draw.rect(border_surface, (255, 220, 120, alpha), border_surface.get_rect(), 3, border_radius=16)
+        self.screen.blit(panel, box.topleft)
+        self.screen.blit(border_surface, box.topleft)
+        self.screen.blit(text_surface, text_surface.get_rect(center=box.center))
 
     def draw_background(self):
         # Desenha o ceu com movimento lateral baseado na rotacao do jogador.

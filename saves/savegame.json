@@ -1,0 +1,72 @@
+{
+  "dev_mode": false,
+  "map": {
+    "map_id": "map_01_llm",
+    "doors": {
+      "door_1": {
+        "is_open": true,
+        "selected_button_tile": [
+          0,
+          8
+        ]
+      },
+      "door_2": {
+        "is_open": true,
+        "selected_button_tile": [
+          0,
+          24
+        ]
+      },
+      "door_3": {
+        "is_open": true,
+        "selected_button_tile": [
+          0,
+          40
+        ]
+      }
+    }
+  },
+  "player": {
+    "x": 9.47555693599571,
+    "y": 1.1951750706054525,
+    "angle": 1.6688999999999827,
+    "health": 76,
+    "infinite_health": false,
+    "speed_multiplier": 1.0
+  },
+  "weapon": {
+    "weapon_type": "minigun",
+    "special_active": false,
+    "special_remaining_ms": 0,
+    "special_cooldown_remaining_ms": 0,
+    "special_shot_remaining_ms": 0
+  },
+  "objects": {
+    "horde_cleared": true,
+    "final_boss_spawned": true,
+    "npcs": [
+      {
+        "type": "FinalBossNPC",
+        "x": 8.53205446148323,
+        "y": 11.642052870676117,
+        "health": 799,
+        "player_search_trigger": true,
+        "phase_two_triggered": true,
+        "phase_two_reflection_center": [
+          8.08424720325088,
+          35.74831221072446
+        ]
+      }
+    ],
+    "pickups": {
+      "cat_pickup_active": false,
+      "racao_pickups": [
+        [
+          6.5,
+          61.5
+        ]
+      ],
+      "minigun_pickup": null
+    }
+  }
+}
