@@ -451,9 +451,6 @@ class FinalBossNPC(NPC):
                 )
                 self.game.object_handler.add_sprite(projectile)
 
-
-<<<<<<< HEAD
-=======
 class SecretBossNPC(NPC):
     def __init__(self, game, path='resources/sprites/npc/boss_secreto/boss-parado.png', pos=(11.5, 16.5),
                  scale=5.1, shift=-0.24, animation_time=110):
@@ -513,9 +510,6 @@ class SecretBossNPC(NPC):
             damage=self.projectile_damage,
         )
         self.game.object_handler.add_sprite(projectile)
-
-
->>>>>>> 51e6147 (Initial project import and gameplay updates)
 class FinalBossReflection(SpriteObject):
     def __init__(self, game, original, mirror_center, initial_pos):
         # Cria o reflexo do boss final que espelha posicao e acoes na fase 2.

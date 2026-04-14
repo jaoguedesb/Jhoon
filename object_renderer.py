@@ -67,10 +67,7 @@ class ObjectRenderer:
         self.draw_final_boss_bar()
         self.draw_interaction_prompt()
         self.draw_top_message()
-<<<<<<< HEAD
-=======
         self.draw_console_overlay()
->>>>>>> 51e6147 (Initial project import and gameplay updates)
 
     def win(self):
         # Exibe a tela de vitoria.
@@ -274,8 +271,6 @@ class ObjectRenderer:
         self.screen.blit(border_surface, box.topleft)
         self.screen.blit(text_surface, text_surface.get_rect(center=box.center))
 
-<<<<<<< HEAD
-=======
     def draw_console_overlay(self):
         # Desenha o terminal interno e as mensagens de retorno dos comandos.
         time_now = pg.time.get_ticks()
@@ -320,8 +315,6 @@ class ObjectRenderer:
             message_surface = self.hud_label_font.render(self.game.console_message, True, (255, 244, 188))
             message_rect = message_surface.get_rect(midleft=(box.x + 22, box.centery if not self.game.console_active else box.y + box.height - 22))
             self.screen.blit(message_surface, message_rect)
-
->>>>>>> 51e6147 (Initial project import and gameplay updates)
     def draw_background(self):
         # Desenha o ceu com movimento lateral baseado na rotacao do jogador.
         self.sky_offset = (self.sky_offset + 4.5 * self.game.player.rel) % WIDTH
